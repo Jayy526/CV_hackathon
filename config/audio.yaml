@@ -1,0 +1,28 @@
+# Audio acquisition configuration.
+# Values here are the single source of truth; do not hard-code them in algorithms.
+
+audio:
+  # Default sample rate. 48 kHz chosen for TDOA resolution (one sample = 7.1 mm
+  # of sound travel vs 21.4 mm at 16 kHz). Change here if hardware testing shows
+  # a different value is preferable.
+  sample_rate: 48000
+
+  # Bits per sample on the wire. INMP441 emits 24-bit data in a 32-bit I2S slot.
+  sample_width_bits: 32
+
+  # Number of microphone channels. 2 initially, 4 after the Phase L upgrade.
+  num_channels: 2
+
+  # Samples per channel in one processing frame.
+  frame_size: 1024
+
+serial:
+  # Leave null to auto-detect via tools/detect_device.py.
+  port: null
+  baudrate: 921600
+  # USB VID/PID pairs that indicate an ESP32 board (hex strings).
+  known_device_ids:
+    - { vid: "303A", pid: null,   label: "Espressif native USB (ESP32-S2/S3)" }
+    - { vid: "10C4", pid: "EA60", label: "Silicon Labs CP210x UART bridge" }
+    - { vid: "1A86", pid: null,   label: "QinHeng CH34x UART bridge" }
+    - { vid: "0403", pid: null,   label: "FTDI UART bridge" }

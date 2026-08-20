@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# uv
+uv.lock
+
+# Audio artifacts
+recordings/
+*.wav
+*.flac
+
+# Firmware build artifacts
+build/
+*.bin
+*.elf
+*.map
+
+# Calibration output
+calibration/*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

@@ -1,0 +1,49 @@
+# Example classroom geometry. Replace every number here with the real room
+# before trusting any seat mapping. Nothing in the code assumes these values.
+#
+# Coordinate system: metres, origin at the front-left corner of the room as seen
+# from the students. +x runs to the right along the front wall, +y runs from the
+# front of the room toward the back.
+
+classroom:
+  name: example_room
+  width: 8.0            # metres, along +x
+  height: 10.0          # metres, along +y
+  speed_of_sound: 343.0 # m/s at ~20 C; adjust for a hot or cold room
+
+# Microphone positions in room coordinates, IN CHANNEL ORDER.
+# microphones[0] is channel_0, microphones[1] is channel_1, and so on.
+# The order defines the sign of every TDOA, so do not shuffle it.
+#
+# This example places a 0.30 m two-microphone array on the front wall, centred.
+# Wider spacing gives better angular resolution; see docs in gcc_phat.py.
+microphones:
+  - id: mic_1
+    x: 3.85
+    y: 0.0
+  - id: mic_2
+    x: 4.15
+    y: 0.0
+
+array:
+  # Compass direction (degrees CCW from +x) of the side the students are on.
+  # 90 means the array faces into the room along +y. This is how a two-mic
+  # array is told which of its two mirror-image solutions is the real one.
+  orientation_degrees: 90.0
+
+# Seats may be given as an explicit list or as a grid. The grid form below
+# generates A1..E6: 5 rows of 6 seats.
+seats:
+  grid:
+    rows: 5
+    columns: 6
+    row_spacing: 1.2      # metres between rows, along +y
+    column_spacing: 0.9   # metres between seats in a row, along +x
+    origin_x: 1.75        # room coordinates of seat A1
+    origin_y: 2.0
+
+# Alternative explicit form, for rooms that are not a clean grid:
+#
+# seats:
+#   - {id: A1, x: 1.75, y: 2.0, row: A, column: 1}
+#   - {id: A2, x: 2.65, y: 2.0, row: A, column: 2}
