@@ -159,10 +159,23 @@ def test_monitor_plot_is_written_headlessly(monitor, audio_config, room, tmp_pat
     assert output.exists() and output.stat().st_size > 0
 
 
-def test_monitor_refuses_the_esp32_source_clearly(monitor, audio_config, room):
-    with pytest.raises(NotImplementedError) as excinfo:
-        monitor.build_source(monitor_args(source="esp32"), audio_config, room)
-    assert "not implemented" in str(excinfo.value).lower()
+def test_monitor_builds_a_real_esp32_source_and_refuses_to_guess_a_port(
+    monitor, audio_config, room
+):
+    # Was "refuses: not implemented". It is implemented now, so the honest
+    # failure moved from construction to start(), where the port is missing.
+    from heimdall.audio.sources import AudioSourceError, ESP32AudioSource
+
+    source = monitor.build_source(monitor_args(source="esp32"), audio_config, room)
+    assert isinstance(source, ESP32AudioSource)
+    assert source.sample_rate == 16000
+
+    # Clear the configured port rather than assuming it is unset: the shipped
+    # config names a real device, and a test must not open the board.
+    source.port_name = None
+    with pytest.raises(AudioSourceError) as excinfo:
+        source.start()
+    assert "detect_device.py" in str(excinfo.value)
 
 
 # --- calibrate_audio ---------------------------------------------------------
@@ -272,11 +285,15 @@ def test_calibration_measure_returns_no_angle_for_silence(calibrate, room):
     assert rejected == 5
 
 
-def test_calibration_esp32_factory_is_not_available_yet(calibrate, audio_config, room, monkeypatch):
+def test_calibration_esp32_factory_builds_a_real_source(calibrate, audio_config, room, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda *a, **k: "")
+    from heimdall.audio.sources import AudioSourceError, ESP32AudioSource
+
     factory = calibrate.esp32_source_factory(audio_config, room, noise=0.0)
-    with pytest.raises(NotImplementedError):
-        factory(0.0)
+    source = factory(0.0)
+    assert isinstance(source, ESP32AudioSource)
+    with pytest.raises(AudioSourceError):
+        source.start()          # no port configured; it will not invent one
 
 
 def test_calibration_point_is_json_friendly(calibrate, audio_config, room):
@@ -422,7 +439,10 @@ def test_benchmark_result_is_json_friendly(benchmark, audio_config, room):
     assert payload["stages"]["gcc_phat"]["p95_ms"] >= 0.0
 
 
-def test_benchmark_refuses_the_esp32_source_clearly(benchmark, audio_config, room):
-    with pytest.raises(NotImplementedError) as excinfo:
-        benchmark.build_source(benchmark_args(source="esp32"), audio_config, room)
-    assert "not implemented" in str(excinfo.value).lower()
+def test_benchmark_builds_a_real_esp32_source(benchmark, audio_config, room):
+    from heimdall.audio.sources import AudioSourceError, ESP32AudioSource
+
+    source = benchmark.build_source(benchmark_args(source="esp32"), audio_config, room)
+    assert isinstance(source, ESP32AudioSource)
+    with pytest.raises(AudioSourceError):
+        source.start()

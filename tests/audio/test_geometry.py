@@ -5,6 +5,7 @@ import textwrap
 import numpy as np
 import pytest
 
+from heimdall.audio.gcc_phat import max_delay_samples
 from heimdall.audio.geometry import (
     ClassroomConfig,
     GeometryError,
@@ -39,6 +40,32 @@ def test_example_config_loads():
     assert room.width > 0 and room.height > 0
     assert room.array.num_channels == 2
     assert room.num_seats == 30
+
+
+def test_config_spacing_is_the_measured_hardware_spacing():
+    """The built array measures 0.135 m centre to centre. Every TDOA search
+    window in the system is derived from this number, so it must be the real
+    one, not the pre-hardware placeholder."""
+    room = load_classroom_config()
+    assert room.array.spacing == pytest.approx(0.135, abs=1e-6)
+
+
+def test_measured_spacing_sets_the_physical_delay_limit():
+    """0.135 m allows at most ~18.9 samples of TDOA at 48 kHz. The diagnostic
+    sketch searched +-28, which is why it could return unphysical lags."""
+    room = load_classroom_config()
+    limit = max_delay_samples(room.array.spacing, 48000, room.speed_of_sound)
+    assert limit == pytest.approx(0.135 / 343.0 * 48000, rel=1e-6)
+    assert 18.0 < limit < 19.0
+
+
+def test_channel_zero_side_is_unchanged_by_the_spacing_update():
+    """Narrowing the array must not flip which side channel 0 faces: the axis
+    points toward channel 0 and defines the sign of every bearing."""
+    room = load_classroom_config()
+    assert room.array.microphones[0].id == "mic_1"
+    assert room.array.microphones[0].x < room.array.microphones[1].x
+    assert np.allclose(room.array.axis, [-1.0, 0.0])
 
 
 def test_example_config_seat_grid_is_labelled():

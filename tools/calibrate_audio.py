@@ -76,7 +76,7 @@ def esp32_source_factory(audio_config: AudioConfig, classroom: ClassroomConfig, 
             "\nPlace the speaker at %.0f degrees from the array, then press Enter..."
             % angle_degrees
         )
-        return ESP32AudioSource()
+        return ESP32AudioSource(config=audio_config)
 
     return make
 

@@ -21,10 +21,30 @@ def test_esp32_source_is_an_audio_source():
     assert issubclass(ESP32AudioSource, AudioSource)
 
 
-def test_esp32_source_refuses_to_pretend_it_works():
-    with pytest.raises(NotImplementedError) as excinfo:
-        ESP32AudioSource()
-    assert "not implemented" in str(excinfo.value).lower()
+def test_esp32_source_is_implemented_and_reports_the_transmitted_rate():
+    # Was "refuses to construct". The hardware exists and the wire is proven,
+    # so the refusal is gone; what replaces it is the real contract. Full
+    # behavioural coverage lives in tests/audio/test_esp32_source.py.
+    source = ESP32AudioSource(port="COM_FAKE")
+    assert source.sample_rate == 16000        # transmitted, not the 48000 acquired
+    assert source.num_channels == 2
+    assert source.is_running is False
+
+
+def test_esp32_source_refuses_to_guess_a_port():
+    # Explicitly unconfigured, rather than relying on the shipped config being
+    # null - it is not, and a test must never open the real board by accident.
+    import dataclasses
+
+    from heimdall.audio.config import load_audio_config
+
+    config = load_audio_config()
+    config = dataclasses.replace(
+        config, transport=dataclasses.replace(config.transport, port=None))
+    source = ESP32AudioSource(config=config)
+    with pytest.raises(AudioSourceError) as excinfo:
+        source.start()
+    assert "detect_device.py" in str(excinfo.value)
 
 
 def test_source_reports_configured_format():

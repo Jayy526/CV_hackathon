@@ -97,7 +97,7 @@ def build_source(args, audio_config, classroom):
     if args.source == "esp32":
         from heimdall.audio.sources import ESP32AudioSource
 
-        return ESP32AudioSource()  # raises NotImplementedError with an explanation
+        return ESP32AudioSource(config=audio_config)
 
     raise SystemExit("unknown source %r" % args.source)
 

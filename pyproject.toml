@@ -11,6 +11,9 @@ dependencies = [
     "pyserial>=3.5",
     "soundfile>=0.12",
     "sounddevice>=0.4",
+    # Phase 6: the live webcam heatmap. Wheels are self-contained; nothing is
+    # downloaded at runtime and no network access is ever required.
+    "opencv-python>=4.10",
 ]
 
 [dependency-groups]

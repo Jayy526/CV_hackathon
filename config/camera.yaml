@@ -1,0 +1,74 @@
+# Camera configuration, and how the camera relates to the microphone array.
+#
+# A bearing from the array means nothing on a video frame until these two are
+# related. Nothing here may be guessed: webcam horizontal fields of view range
+# from roughly 55 to 90 degrees, and assuming the wrong one skews every overlay
+# in the frame - worst at the edges, where it is least obvious.
+
+camera:
+  # Which camera OpenCV should open. 0 is usually the built-in webcam.
+  index: 0
+
+  # Capture resolution. The projection uses `width` for the pixel mapping, so
+  # if you change the capture size you change the mapping - it is not a
+  # cosmetic setting.
+  width: 1280
+  height: 720
+
+  # HORIZONTAL field of view, in degrees, of the ACTUAL capture at the
+  # resolution above. Many webcams crop rather than scale when you change
+  # aspect ratio, so a 16:9 mode and a 4:3 mode on the same camera can have
+  # different horizontal FOVs. Measure it rather than trusting a spec sheet:
+  # put a metre rule at a measured distance, note how much of it fills the
+  # frame width, and HFOV = 2 * atan((visible_width / 2) / distance).
+  horizontal_fov_degrees: 70.0
+
+  # The angle between the camera's optical axis and the array's 0 degree
+  # broadside, in degrees. Positive means the camera is aimed toward the +90
+  # side of the array (toward channel 0 / mic 1).
+  #
+  # Leave at 0.0 only if the camera is genuinely square to the array. Estimate
+  # it properly with:
+  #     python tools/calibrate_camera_audio.py
+  azimuth_offset_degrees: 0.0
+
+  # ---------------------------------------------------------------------------
+  # MOUNTING: the camera must sit at the ARRAY CENTRE.
+  #
+  # This is physics, not a preference. A lateral offset between the camera and
+  # the array centre introduces PARALLAX: the angle to a source differs between
+  # the two viewpoints by atan(offset / range). Correcting it needs the range,
+  # and a two-microphone array HAS NO RANGE - that is a hard property of a
+  # linear array, not a gap in the software.
+  #
+  # So this error is UNCORRECTABLE IN PRINCIPLE. It cannot be calibrated out,
+  # only kept small. azimuth_offset_degrees cannot absorb it either: parallax
+  # changes with range, and a fixed angular offset does not.
+  #
+  # Parallax error in degrees = atan(offset / range):
+  #
+  #     offset |  at 1 m   at 2 m   at 3 m   at 4 m
+  #       2 cm |   1.15     0.57     0.38     0.29
+  #       5 cm |   2.86     1.43     0.95     0.72
+  #      10 cm |   5.71     2.86     1.91     1.43
+  #      20 cm |  11.31     5.71     3.81     2.86
+  #
+  # Against the array's own angular resolution of 4.55 degrees at 0.135 m
+  # spacing and the 16 kHz transmitted rate, parallax drops below the
+  # resolution limit only beyond:
+  #
+  #       2 cm -> 0.25 m        10 cm -> 1.26 m
+  #       5 cm -> 0.63 m        20 cm -> 2.51 m
+  #
+  # To keep parallax under the resolution limit for everything beyond 1 m, the
+  # offset must be 8 cm or less. At 20 cm it dominates the measurement at close
+  # range and the overlay will be visibly wrong for anyone near the array.
+  #
+  # Measure this and put the real number here. The tools warn when it is large
+  # enough to matter rather than pretending it is zero.
+  lateral_offset_m: 0.0
+
+  # Vertical offset is recorded for completeness. It does not affect a
+  # horizontal-only projection - this array measures azimuth and nothing else,
+  # so the overlay is a full-height band and has no vertical position to shift.
+  vertical_offset_m: 0.0

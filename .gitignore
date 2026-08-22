@@ -29,3 +29,12 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Working scratch: fixtures, captures, plots. Regenerable, not source.
+scratch/
+*.npy
+
+# Hardware run outputs, not code
+4a.json
+images.jpg
+heatmap-*.mp4

@@ -15,14 +15,18 @@ classroom:
 # microphones[0] is channel_0, microphones[1] is channel_1, and so on.
 # The order defines the sign of every TDOA, so do not shuffle it.
 #
-# This example places a 0.30 m two-microphone array on the front wall, centred.
+# MEASURED HARDWARE: two INMP441s, 0.135 m centre-to-centre, on the front wall,
+# centred on the room. 0.135 m is the physically measured spacing of the built
+# array - do not change it silently. If calibration shows the EFFECTIVE spacing
+# differs from the measured one, change it here and say so explicitly.
+#
 # Wider spacing gives better angular resolution; see docs in gcc_phat.py.
 microphones:
   - id: mic_1
-    x: 3.85
+    x: 3.9325
     y: 0.0
   - id: mic_2
-    x: 4.15
+    x: 4.0675
     y: 0.0
 
 array:

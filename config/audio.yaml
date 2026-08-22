@@ -26,3 +26,59 @@ serial:
     - { vid: "10C4", pid: "EA60", label: "Silicon Labs CP210x UART bridge" }
     - { vid: "1A86", pid: null,   label: "QinHeng CH34x UART bridge" }
     - { vid: "0403", pid: null,   label: "FTDI UART bridge" }
+
+transport:
+  # Audio transport is OFFLINE and USB-only: no Wi-Fi, no TCP, no UDP.
+  #
+  #   INMP441 x2 -> ESP32 I2S (48 kHz stereo) -> anti-aliased 3:1 decimation
+  #              -> continuous 16 kHz stereo int16 -> USB/CP2102 -> laptop
+  #
+  # The stream is CONTINUOUS, not event-triggered.
+  #
+  # An 8N1 serial link carries baud/10 bytes/sec, so 921600 baud gives
+  # 92,160 B/s. Continuous stereo int16 costs rate * 2 ch * 2 B:
+  #     48 kHz -> 192,000 B/s  (208% of the link - impossible)
+  #     24 kHz ->  96,000 B/s  (104% - impossible)
+  #     16 kHz ->  64,000 B/s  ( 70% - fits, and this is what we use)
+  #      8 kHz ->  32,000 B/s  ( 35% - the 460800-baud fallback)
+  # 115200 baud carries 11,520 B/s and tops out near 2.4 kHz stereo: fine for
+  # hardware diagnostics, useless for continuous audio.
+  type: serial
+
+  # Separate from the `serial:` block above, which exists only to IDENTIFY the
+  # board by USB VID/PID; this is the audio data link.
+  #
+  # COM9 is the ESP32 on this machine. COM3-COM8 are Bluetooth virtual ports -
+  # opening one of those does not fail loudly, it just never delivers a packet,
+  # which looks exactly like a dead board. Set it here rather than passing
+  # --port on every command; every tool falls back to this value.
+  port: COM9
+  baud_rate: 921600
+
+  # Rate the ESP32 TRANSMITS at. Acquisition stays at audio.sample_rate
+  # (48000); the ESP32 decimates by audio.sample_rate / transmit_sample_rate,
+  # which must be an exact integer - 48000 / 16000 = 3.
+  #
+  # The decimation must be ANTI-ALIASED. Measured through this repo's own DOA
+  # pipeline at 0.135 m spacing, with reverb and noise:
+  #     48 kHz native                   0.21 deg mean bearing error
+  #     16 kHz, anti-aliased FIR        0.70 deg
+  #     16 kHz, naive sample-dropping   6.10 deg mean, 30 deg worst case
+  # Aliasing destroys the inter-channel phase GCC-PHAT depends on. Dropping
+  # every third sample is not decimation.
+  transmit_sample_rate: 16000
+
+  # The byte-level contract both firmware and receiver must agree on.
+  # The INMP441 delivers 24-bit samples in a 32-bit I2S slot, but the top 16
+  # bits carry all the amplitude that matters here, and halving the wire size
+  # halves the required bandwidth. Conversion to int16 happens ON the ESP32.
+  wire_format:
+    sample_format: int16        # int16 only; the receiver rejects anything else
+    byte_order: little          # ESP32 (Xtensa) is little-endian
+    channel_layout: interleaved # ch0, ch1, ch0, ch1, ...
+    num_channels: 2
+
+  # Samples PER CHANNEL in one continuous packet. 256 = 16 ms of audio and a
+  # 1024-byte payload; against a 16-byte header that is 1.5% framing overhead,
+  # and a small packet keeps the laptop-side latency low.
+  samples_per_packet: 256
